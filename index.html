@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TANMAY SINGH — CASE #01</title>
+  <meta name="description" content="Tanmay Singh — engineer. Systems in C++, agents in Python. Portfolio, CASE #01." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ██ PRELOADER ██ -->
+  <div class="preloader" id="preloader">
+    <div class="preloader-inner">
+      <div class="preloader-sig">t.</div>
+      <div class="preloader-count" id="preloaderCount">000%</div>
+      <div class="preloader-meta">
+        <span>LOADING&nbsp;CASE&nbsp;#01</span>
+        <span>PORTFOLIO&nbsp;v2.1</span>
+      </div>
+      <div class="preloader-bar"><div class="preloader-bar-fill" id="preloaderBar"></div></div>
+    </div>
+  </div>
+
+  <!-- ██ CUSTOM CURSOR ██ -->
+  <div class="cursor" id="cursor" aria-hidden="true">
+    <div class="cursor-h"></div>
+    <div class="cursor-v"></div>
+    <div class="cursor-box"></div>
+    <div class="cursor-label" id="cursorLabel"></div>
+  </div>
+
+  <!-- ██ REGISTRATION MARKS ██ -->
+  <div class="frame" aria-hidden="true">
+    <span class="reg reg-tl">+</span>
+    <span class="reg reg-tr">+</span>
+    <span class="reg reg-bl">+</span>
+    <span class="reg reg-br">+</span>
+  </div>
+
+  <!-- ██ HEADER ██ -->
+  <header class="site-head">
+    <a class="head-id scramble" href="#top" data-text="TANMAY&nbsp;SINGH">TANMAY&nbsp;SINGH</a>
+    <div class="head-meta">
+      <span class="head-clock" id="clock">00:00:00 UTC</span>
+      <span class="head-coords" id="coords">0000&nbsp;X&nbsp;·&nbsp;0000&nbsp;Y</span>
+      <span class="head-case">CASE&nbsp;#01</span>
+    </div>
+    <nav class="head-nav">
+      <a href="#works" class="scramble" data-text="WORKS">WORKS</a>
+      <a href="#about" class="scramble" data-text="ABOUT">ABOUT</a>
+      <a href="#contact" class="scramble" data-text="CONTACT">CONTACT</a>
+    </nav>
+  </header>
+
+  <main id="top">
+
+    <!-- ██ HERO — interactive pixel heat field ██ -->
+    <section class="hero" id="hero">
+      <canvas id="field" aria-hidden="true"></canvas>
+      <h1 class="sr-only">Tanmay Singh — engineer. C++ systems and agentic AI.</h1>
+
+      <div class="hero-meta hero-meta-l" aria-hidden="true">
+        <span>FILE — TS/26/001</span>
+        <span>STATUS — OPEN</span>
+        <span>FIELD — SYSTEMS ⇄ AGENTS</span>
+      </div>
+      <div class="hero-meta hero-meta-r" aria-hidden="true">
+        <span id="heroDate">—</span>
+        <span>DOC v2.1</span>
+        <span>MOVE&nbsp;CURSOR&nbsp;TO&nbsp;PAINT</span>
+      </div>
+
+      <div class="hero-foot-l">
+        <p class="hero-line-a">Engineer — C++ systems on one hand,</p>
+        <p class="hero-line-b">agents that read &amp; reason on the other.</p>
+      </div>
+
+      <div class="hero-scroll" aria-hidden="true">
+        <span>SCROLL</span>
+        <span class="hero-scroll-arrow">↓</span>
+      </div>
+
+      <!-- cell / brush controls, wild-style -->
+      <div class="pxctl" id="pxctl" aria-label="pixel field controls">
+        <span class="lbl">CELL</span>
+        <button data-cell="16">L</button><button data-cell="12" class="on">M</button><button data-cell="9">S</button>
+        <span class="lbl">BRUSH</span>
+        <button data-brush="11">L</button><button data-brush="8" class="on">M</button><button data-brush="5">S</button>
+      </div>
+    </section>
+
+    <!-- ██ WARP — scroll-scrubbed trajectory sequence ██ -->
+    <section class="warp" id="warp">
+      <div class="warp-sticky">
+        <canvas id="warpCanvas" aria-hidden="true"></canvas>
+        <span class="warp-kicker">SEQ.00 — TRAJECTORY</span>
+        <h2 class="warp-msg" id="warpMsg" data-text="AGENTS RUN ON SYSTEMS.">AGENTS RUN ON SYSTEMS.</h2>
+        <div class="warp-lines" aria-hidden="true">
+          <span style="--wx: 12%; --wy: 24%">FROM ZERO.</span>
+          <span style="--wx: 70%; --wy: 30%">IN PHASES.</span>
+          <span style="--wx: 15%; --wy: 74%">NO TRAINING WHEELS.</span>
+          <span style="--wx: 62%; --wy: 79%">CORRECT UNDER LOAD.</span>
+        </div>
+        <span class="warp-hint">SCROLL — VELOCITY FEEDS THE TUNNEL</span>
+      </div>
+    </section>
+
+    <!-- ██ PIXEL MARQUEE ██ -->
+    <div class="marquee" aria-hidden="true" data-cursor="SMEAR">
+      <canvas id="marqueeCanvas"></canvas>
+    </div>
+
+    <!-- ██ WORKS ██ -->
+    <section class="works" id="works">
+      <div class="section-head">
+        <span class="section-no">SEC.01</span>
+        <h2 class="section-title scramble" data-text="WORKS">WORKS</h2>
+        <span class="section-count">[ 03&nbsp;FILES&nbsp;+&nbsp;LAB ]</span>
+      </div>
+
+      <!-- WORK 01 — COURSELENS -->
+      <article class="work reveal">
+        <div class="work-head">
+          <div class="work-id">
+            <span class="work-no">01</span>
+            <div>
+              <h3 class="work-title"><a href="https://github.com/Tanmay-Singh-24/courselens" target="_blank" rel="noopener" data-cursor="REPO&nbsp;↗">COURSELENS</a></h3>
+              <span class="work-file">FILE&nbsp;—&nbsp;CL/26</span>
+            </div>
+          </div>
+          <div class="work-copy">
+            <p class="work-desc">
+              A multimodal, agentic RAG study tool. Feed it a course — slides,
+              PDFs, scanned pages — and it reads everything, routes questions
+              through an agent graph, and answers with receipts. Built through
+              six versions, each one torn down and rebuilt better.
+            </p>
+            <ul class="work-stack">
+              <li>PYTHON</li><li>LANGGRAPH</li><li>GROQ</li><li>CHROMADB</li><li>MULTIMODAL</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="work-art" data-cursor="STIR">
+          <canvas class="work-canvas" data-flow="pipeline"></canvas>
+          <span class="work-art-label">FIG.01 — RETRIEVAL PIPELINE · CURSOR STIRS THE FIELD</span>
+        </div>
+
+        <ol class="work-stages">
+          <li><span class="st-chip">01</span><div><h4>Ingest</h4><p>Slides, PDFs and scans, read as they are.</p></div></li>
+          <li><span class="st-chip">02</span><div><h4>Embed</h4><p>Chunks vectorised into ChromaDB.</p></div></li>
+          <li><span class="st-chip">03</span><div><h4>Route</h4><p>An agent graph picks the retrieval path.</p></div></li>
+          <li><span class="st-chip">04</span><div><h4>Answer</h4><p>Grounded output with receipts attached.</p></div></li>
+        </ol>
+        <p class="work-legend">RED&nbsp;— CHUNKS REJECTED BY THE RELEVANCE GATE</p>
+      </article>
+
+      <!-- WORK 02 — OMS -->
+      <article class="work reveal">
+        <div class="work-head">
+          <div class="work-id">
+            <span class="work-no">02</span>
+            <div>
+              <h3 class="work-title"><a href="https://github.com/Tanmay-Singh-24/order-management-system" target="_blank" rel="noopener" data-cursor="REPO&nbsp;↗">OMS</a></h3>
+              <span class="work-file">FILE&nbsp;—&nbsp;OMS/26</span>
+            </div>
+          </div>
+          <div class="work-copy">
+            <p class="work-desc">
+              An order management system written from zero in modern C++ against
+              MySQL over the X DevAPI. No frameworks, no shortcuts — schema
+              design, connection handling, and the unglamorous machinery that
+              makes transactions honest. A phased build, done to learn the metal.
+            </p>
+            <ul class="work-stack">
+              <li>C++</li><li>MYSQL</li><li>X&nbsp;DEVAPI</li><li>CMAKE</li><li>OPENSSL</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="work-art" data-cursor="STIR">
+          <canvas class="work-canvas" data-flow="ledger"></canvas>
+          <span class="work-art-label">FIG.02 — ORDER LIFECYCLE · CURSOR STIRS THE FIELD</span>
+        </div>
+
+        <ol class="work-stages">
+          <li><span class="st-chip">01</span><div><h4>Intake</h4><p>Orders arrive as raw requests.</p></div></li>
+          <li><span class="st-chip">02</span><div><h4>Validate</h4><p>Schema and stock checks gate entry.</p></div></li>
+          <li><span class="st-chip">03</span><div><h4>Commit</h4><p>Writes land in one transaction.</p></div></li>
+          <li><span class="st-chip">04</span><div><h4>Settled</h4><p>The ledger agrees with itself.</p></div></li>
+        </ol>
+        <p class="work-legend">RED&nbsp;— TRANSACTIONS ROLLED BACK</p>
+      </article>
+
+      <!-- WORK 03 — SEAT RESERVATION -->
+      <article class="work reveal">
+        <div class="work-head">
+          <div class="work-id">
+            <span class="work-no">03</span>
+            <div>
+              <h3 class="work-title"><a href="https://github.com/Tanmay-Singh-24/concurrent-seat-reservation" target="_blank" rel="noopener" data-cursor="REPO&nbsp;↗">SEATLOCK</a></h3>
+              <span class="work-file">FILE&nbsp;—&nbsp;SRS/26</span>
+            </div>
+          </div>
+          <div class="work-copy">
+            <p class="work-desc">
+              A multi-process seat reservation engine in C++17. fork()'d
+              booking agents hammer the same seat map in POSIX shared memory;
+              semaphores decide who wins. A built-in audit first demonstrates
+              the lost-update race — then proves it's been eliminated. Nobody
+              ever sells the same seat twice. Watch it happen in FIG.03.
+            </p>
+            <ul class="work-stack">
+              <li>C++17</li><li>POSIX&nbsp;SHM</li><li>SEMAPHORES</li><li>FORK()</li><li>RACE&nbsp;AUDIT</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="work-art" data-cursor="STIR">
+          <canvas class="work-canvas" data-flow="seats"></canvas>
+          <span class="work-art-label">FIG.03 — CONTENTION FUNNEL · CURSOR STIRS THE FIELD</span>
+        </div>
+
+        <ol class="work-stages">
+          <li><span class="st-chip">01</span><div><h4>Agents</h4><p>fork()'d processes, all wanting 14C.</p></div></li>
+          <li><span class="st-chip">02</span><div><h4>Semaphore</h4><p>One at a time through the gate.</p></div></li>
+          <li><span class="st-chip">03</span><div><h4>Reserve</h4><p>The seat flips taken in shared memory.</p></div></li>
+          <li><span class="st-chip">04</span><div><h4>Audited</h4><p>Lost updates: demonstrated, then gone.</p></div></li>
+        </ol>
+        <p class="work-legend">RED&nbsp;— LOST-UPDATE RACERS, CAUGHT BY THE AUDIT</p>
+      </article>
+
+      <!-- LAB -->
+      <div class="lab reveal">
+        <div class="lab-head">
+          <span class="section-no">SEC.01·B</span>
+          <h3 class="lab-title">LAB&nbsp;/&nbsp;ONGOING</h3>
+        </div>
+        <ul class="lab-list">
+          <li><span class="lab-no">L·01</span><span class="lab-name">SECOND BRAIN</span><span class="lab-note">a personal knowledge vault, wired for retrieval</span></li>
+          <li><span class="lab-no">L·02</span><span class="lab-name">THIS SITE</span><span class="lab-note">hand-built · heat-field pixels · zero frameworks</span></li>
+          <li><span class="lab-no">L·03</span><span class="lab-name">NEXT&nbsp;—&nbsp;???</span><span class="lab-note">file not yet opened</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ██ ABOUT ██ -->
+    <section class="about" id="about">
+      <div class="section-head section-head-inverse">
+        <span class="section-no">SEC.02</span>
+        <h2 class="section-title scramble" data-text="ABOUT">ABOUT</h2>
+        <span class="section-count">[ SUBJECT&nbsp;PROFILE ]</span>
+      </div>
+
+      <div class="about-grid">
+        <div class="about-portrait" data-cursor="WINK">
+          <canvas id="portraitCanvas"></canvas>
+          <span class="about-portrait-label">SUBJECT — THE&nbsp;OBSERVER · IT&nbsp;TRACKS,&nbsp;IT&nbsp;BLINKS,&nbsp;IT&nbsp;WINKS&nbsp;ON&nbsp;CLICK</span>
+        </div>
+        <div class="about-text">
+          <p class="about-lede">
+            I build twice: once <em>close to the metal</em> — C++, SQL, memory,
+            transactions — and once <em>at the frontier</em> — agents that read,
+            retrieve, and reason over messy human material.
+          </p>
+          <p>
+            I learn by building whole systems from zero, in phases, without
+            frameworks doing the thinking for me. Everything in SEC.01 was
+            built that way. The interesting problems live where the two layers
+            meet — fast machinery underneath, intelligence on top.
+          </p>
+          <dl class="about-facts">
+            <div><dt>DISCIPLINE</dt><dd>SOFTWARE ENGINEERING</dd></div>
+            <div><dt>CURRENTLY</dt><dd>SYSTEMS × AGENTIC AI</dd></div>
+            <div><dt>METHOD</dt><dd>FROM ZERO, IN PHASES</dd></div>
+            <div><dt>STATUS</dt><dd class="blink">OPEN TO WORK ▮</dd></div>
+          </dl>
+        </div>
+      </div>
+
+      <!-- ██ PLAYGROUND — SNAKE://RETRIEVAL ██ -->
+      <div class="playground reveal" id="playground">
+        <div class="play-head">
+          <span class="section-no">SEC.02·B</span>
+          <h3 class="play-title">PLAYGROUND — SNAKE://RETRIEVAL</h3>
+          <span class="play-hint">ARROWS / WASD · SWIPE ON TOUCH</span>
+        </div>
+        <div class="play-wrap" data-cursor="PLAY">
+          <canvas id="snakeCanvas"></canvas>
+          <div class="play-hud">
+            <span id="playScore">TOKENS 0000</span>
+            <span id="playBest">BEST 0000</span>
+            <span id="playMode" class="blink">AUTOPILOT — ARROWS / SWIPE TO DRIVE</span>
+          </div>
+        </div>
+        <p class="play-legend">
+          THE AGENT IS DRIVING ITSELF — TAKE THE WHEEL. PAPER&nbsp;— CONTEXT CHUNK (+10) ·
+          RED&nbsp;— HALLUCINATION (FATAL) · THE BODY COOLS THROUGH THE HEAT BANDS
+        </p>
+      </div>
+    </section>
+
+    <!-- ██ CONTACT ██ -->
+    <section class="contact" id="contact">
+      <div class="section-head">
+        <span class="section-no">SEC.03</span>
+        <h2 class="section-title scramble" data-text="CONTACT">CONTACT</h2>
+        <span class="section-count">[ TRANSMIT ]</span>
+      </div>
+
+      <a class="contact-mail" href="mailto:tanmaysingh416@gmail.com" data-cursor="SEND">
+        TANMAYSINGH416@GMAIL.COM
+      </a>
+
+      <div class="contact-row">
+        <a class="cta-pill" href="mailto:tanmaysingh416@gmail.com" data-cursor="SEND">GET&nbsp;IN&nbsp;TOUCH</a>
+        <canvas id="smiley" data-cursor=":)"></canvas>
+        <div class="contact-links">
+          <a href="https://github.com/Tanmay-Singh-24" target="_blank" rel="noopener" class="scramble" data-text="GITHUB&nbsp;↗">GITHUB&nbsp;↗</a>
+          <a href="https://www.linkedin.com/" target="_blank" rel="noopener" class="scramble" data-text="LINKEDIN&nbsp;↗">LINKEDIN&nbsp;↗</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ██ FOOTER ██ -->
+  <footer class="site-foot">
+    <div class="foot-barcode" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <div class="foot-row">
+      <span>©&nbsp;<span id="year">2026</span>&nbsp;TANMAY&nbsp;SINGH</span>
+      <span>CASE&nbsp;#01&nbsp;—&nbsp;CLOSED&nbsp;WHEN&nbsp;SHIPPED</span>
+      <span>MADE&nbsp;BY&nbsp;HAND,&nbsp;PAINTED&nbsp;IN&nbsp;HEAT</span>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
