@@ -1597,14 +1597,20 @@ function onScreen(el, cb) {
   size();
   addEventListener("resize", size);
 
-  const LAUNCH = 22, MELT = 26;
+  /* Choreography, lifted from the reference:
+     CHARGE  — an orb swells at the cursor, concentric rings at its rim
+     RUMBLE  — at saturation the whole field shudders
+     WAVE2   — a second front sweeps through, flipping the body to red
+     GLITCH  — the field shatters into red static and thins to nothing  */
+  const CHARGE = 150, RUMBLE = 16, WAVE2 = 90, GLITCH = 52;
+  const P = { CHARGE: 0, RUMBLE: 1, WAVE2: 2, GLITCH: 3 };
 
   function release() { if (state) state.held = false; }
 
   function start(x, y, touch) {
     // fresh dither each time so no two floods look alike
     for (let i = 0; i < seed.length; i++) seed[i] = Math.random();
-    state = { x, y, t: 0, melt: 0, held: true, touch };
+    state = { x, y, t: 0, ph: P.CHARGE, k: 0, held: true, touch };
     canvas.classList.add("on");
   }
 
@@ -1661,46 +1667,82 @@ function onScreen(el, cb) {
       Math.max(state.x, W - state.x),
       Math.max(state.y, H - state.y)
     );
+    const s = state;
+    s.t++; s.k++;
 
-    if (state.held) state.t++;
-    else state.melt++;
+    /* advance the choreography */
+    if (s.ph === P.CHARGE) {
+      // letting go early skips straight to the shatter
+      if (!s.held) { s.ph = P.GLITCH; s.k = 0; }
+      else if (s.k >= CHARGE) { s.ph = P.RUMBLE; s.k = 0; }
+    } else if (s.ph === P.RUMBLE) {
+      if (s.k >= RUMBLE) { s.ph = P.WAVE2; s.k = 0; }
+    } else if (s.ph === P.WAVE2) {
+      if (s.k >= WAVE2) { s.ph = P.GLITCH; s.k = 0; }
+    } else if (s.ph === P.GLITCH && s.k >= GLITCH) {
+      state = null;
+      canvas.classList.remove("on");
+      ctx.clearRect(0, 0, W, H);
+      return;
+    }
 
-    // catapult: launches hard, decelerates into full coverage, then holds
-    const p = Math.min(1, state.t / LAUNCH);
-    const grow = (1 - Math.pow(1 - p, 4)) * maxR * 1.06;
-    const boil = state.t * 0.05;
+    const ease = (u) => 1 - Math.pow(1 - Math.min(1, u), 3);
+    // orb swells the whole time it's held, saturating right at the end
+    const grow = s.ph === P.CHARGE
+      ? ease(s.k / CHARGE) * maxR * 1.05
+      : maxR * 1.05;
+    // second front sweeps once the field has saturated
+    const grow2 = s.ph === P.WAVE2 ? ease(s.k / WAVE2) * maxR * 1.05 : -1;
+    const boil = s.t * 0.05;
+
+    // the shudder at saturation, and a lighter tremor under the 2nd wave
+    let shx = 0, shy = 0;
+    if (s.ph === P.RUMBLE) {
+      shx = (Math.random() - 0.5) * CELL * 2.2;
+      shy = (Math.random() - 0.5) * CELL * 2.2;
+    } else if (s.ph === P.WAVE2) {
+      shx = (Math.random() - 0.5) * CELL * 0.7;
+      shy = (Math.random() - 0.5) * CELL * 0.7;
+    }
+
+    const gk = s.ph === P.GLITCH ? s.k / GLITCH : 0;
 
     ctx.clearRect(0, 0, W, H);
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const id = r * cols + c;
         const x = c * CELL, y = r * CELL;
-        const d = Math.hypot(x + CELL / 2 - state.x, y + CELL / 2 - state.y);
+        const d = Math.hypot(x + CELL / 2 - s.x, y + CELL / 2 - s.y);
         // dithered leading edge so the front reads organic, not circular
         if (d - seed[id] * CELL * 3.4 > grow) continue;
-        // once released, cells drain away in their own random order
-        if (!state.held && seed[id] < state.melt / MELT) continue;
 
-        /* Colour rides the FRONT, not the radius: a navy vanguard leads,
-           then blue, aqua and a thin red, with a solid hot body filling in
-           behind. That's what makes it read as a wave passing through
-           rather than a gradient blob. */
-        const edge = grow - d + Math.sin(boil + seed[id] * 6.283) * CELL * 0.9;
         let col;
-        if (edge < CELL * 3.5) col = PAL.cold;
-        else if (edge < CELL * 7) col = PAL.blue;
-        else if (edge < CELL * 10.5) col = PAL.aqua;
-        else if (edge < CELL * 13.5) col = PAL.alert;
-        else col = seed[id] > 0.99 ? PAL.aqua : PAL.lime;   // solid body, rare fleck
-        ctx.fillStyle = col;
-        ctx.fillRect(x, y, CELL - 1, CELL - 1);
-      }
-    }
+        if (s.ph === P.GLITCH) {
+          /* shatter: the field becomes red static that thins to nothing */
+          if (Math.random() < gk * 1.15) continue;
+          const v = Math.random();
+          col = v > 0.93 ? PAL.cold : v > 0.87 ? PAL.blue : v > 0.82 ? PAL.lime : PAL.alert;
+        } else {
+          /* Colour rides the FRONT, not the radius: a navy vanguard leads,
+             then blue, aqua and a thin red, with a solid body behind. */
+          const edge = grow - d + Math.sin(boil + seed[id] * 6.283) * CELL * 0.9;
+          if (edge < CELL * 3.5) col = PAL.cold;
+          else if (edge < CELL * 7) col = PAL.blue;
+          else if (edge < CELL * 10.5) col = PAL.aqua;
+          else if (edge < CELL * 13.5) col = PAL.alert;
+          else col = seed[id] > 0.99 ? PAL.aqua : PAL.lime;
 
-    if (!state.held && state.melt > MELT) {
-      state = null;
-      canvas.classList.remove("on");
-      ctx.clearRect(0, 0, W, H);
+          // second wave repaints the body red behind its own lime-edged front
+          if (grow2 >= 0 && d - seed[id] * CELL * 3.4 < grow2) {
+            const e2 = grow2 - d;
+            if (e2 < CELL * 3) col = PAL.cold;
+            else if (e2 < CELL * 5.5) col = PAL.lime;
+            else col = seed[id] > 0.99 ? PAL.lime : PAL.alert;
+          }
+        }
+        ctx.fillStyle = col;
+        ctx.fillRect(x + shx, y + shy, CELL - 1, CELL - 1);
+      }
     }
   }
   requestAnimationFrame(frame);
