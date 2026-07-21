@@ -1539,7 +1539,8 @@ function onScreen(el, cb) {
   }
 
   about.addEventListener("pointerdown", (e) => {
-    if (e.target.closest("a, button")) return;
+    // the Observer owns its own click (it winks) — don't bury it in flood
+    if (e.target.closest("a, button, .about-portrait")) return;
     if (reducedMotion) return;
     if (e.pointerType === "mouse") { start(e.clientX, e.clientY, false); return; }
     disarm();
