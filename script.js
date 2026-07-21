@@ -1513,18 +1513,55 @@ function onScreen(el, cb) {
 
   function release() { if (state) state.held = false; }
 
+  function start(x, y, touch) {
+    // fresh dither each time so no two floods look alike
+    for (let i = 0; i < seed.length; i++) seed[i] = Math.random();
+    state = { x, y, t: 0, melt: 0, held: true, touch };
+    canvas.classList.add("on");
+  }
+
+  /* Touch fires pointerdown the instant a finger lands, so a plain
+     press would fire while scrolling. On touch we require a deliberate
+     long press that hasn't drifted; any movement cancels it. Mouse
+     keeps the immediate click. */
+  const LONGPRESS = 300, DRIFT = 10, DRAG_OUT = 60;
+  let armed = null;
+
+  if (window.matchMedia("(hover: none)").matches) {
+    const hint = document.querySelector(".about-flood-hint");
+    if (hint) hint.textContent = "PRESS & HOLD ANYWHERE IN THIS SECTION — IT FLOODS THE SCREEN";
+  }
+
+  function disarm() {
+    if (!armed) return;
+    clearTimeout(armed.timer);
+    armed = null;
+  }
+
   about.addEventListener("pointerdown", (e) => {
     if (e.target.closest("a, button")) return;
     if (reducedMotion) return;
-    // fresh dither each time so no two floods look alike
-    for (let i = 0; i < seed.length; i++) seed[i] = Math.random();
-    state = { x: e.clientX, y: e.clientY, t: 0, melt: 0, held: true };
-    canvas.classList.add("on");
+    if (e.pointerType === "mouse") { start(e.clientX, e.clientY, false); return; }
+    disarm();
+    armed = { x: e.clientX, y: e.clientY };
+    armed.timer = setTimeout(() => {
+      if (armed) { start(armed.x, armed.y, true); armed = null; }
+    }, LONGPRESS);
   });
+
+  about.addEventListener("pointermove", (e) => {
+    // a finger that travels is a scroll, not a press
+    if (armed && Math.hypot(e.clientX - armed.x, e.clientY - armed.y) > DRIFT) disarm();
+    // dragging well away after it opened drains it, so scrolling frees the screen
+    if (state && state.held && state.touch &&
+        Math.hypot(e.clientX - state.x, e.clientY - state.y) > DRAG_OUT) release();
+  }, { passive: true });
+
   // let go anywhere and it drains
-  addEventListener("pointerup", release);
-  addEventListener("pointercancel", release);
-  addEventListener("blur", release);
+  addEventListener("pointerup", () => { disarm(); release(); });
+  addEventListener("pointercancel", () => { disarm(); release(); });
+  addEventListener("blur", () => { disarm(); release(); });
+  addEventListener("scroll", disarm, { passive: true });
 
   function frame() {
     requestAnimationFrame(frame);

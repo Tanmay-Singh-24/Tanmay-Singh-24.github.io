@@ -634,6 +634,16 @@ section { padding: 6rem 2rem; }
   .about-portrait { max-width: 320px; }
 }
 
+/* touch: the long press is a gesture here, so don't let iOS pop the
+   selection magnifier / callout menu on top of it */
+@media (hover: none) {
+  .about {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+}
+
 /* ---- playground: snake://retrieval ---- */
 .playground { margin-top: 4.5rem; }
 .play-head {
