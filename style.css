@@ -133,16 +133,12 @@ a { color: inherit; text-decoration: none; cursor: none; }
 .cursor-h, .cursor-v { position: fixed; background: rgba(241, 242, 238, 0.18); mix-blend-mode: difference; }
 .cursor-h { left: 0; right: 0; height: 1px; }
 .cursor-v { top: 0; bottom: 0; width: 1px; }
-.cursor-box {
+/* the sprite that morphs per section */
+.cursor-px {
   position: fixed;
-  width: 12px; height: 12px;
-  border: 1.5px solid var(--blue-hi);
-  transform: translate(-50%, -50%);
-  transition: width 0.15s, height 0.15s, background 0.15s;
-}
-.cursor.active .cursor-box {
-  width: 38px; height: 38px;
-  background: rgba(80, 96, 255, 0.14);
+  width: 60px; height: 60px;
+  image-rendering: pixelated;
+  transition: transform 0.14s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .cursor-label {
   position: fixed;
@@ -155,6 +151,19 @@ a { color: inherit; text-decoration: none; cursor: none; }
   .cursor { display: none; }
   body, a { cursor: auto; }
 }
+
+/* ================================================================
+   PIXEL FLOOD — click detonation that takes the whole screen
+   ================================================================ */
+#flood {
+  position: fixed; inset: 0;
+  width: 100vw; height: 100vh;
+  z-index: 950;
+  pointer-events: none;
+  display: block;
+  opacity: 0;
+}
+#flood.on { opacity: 1; }
 
 /* ================================================================
    REGISTRATION MARKS
@@ -357,7 +366,12 @@ a { color: inherit; text-decoration: none; cursor: none; }
 }
 @media (max-width: 720px) {
   .warp { height: 300vh; }
-  .warp-lines span { font-size: 10px; }
+  .warp-lines span {
+    font-size: 10px;
+    max-width: 42vw;
+    line-height: 1.35;
+  }
+  .warp-msg { font-size: clamp(1.15rem, 6vw, 2rem); }
 }
 @media (prefers-reduced-motion: reduce) {
   .warp { height: auto; }
@@ -579,6 +593,14 @@ section { padding: 6rem 2rem; }
   letter-spacing: -0.02em;
   line-height: 1.3;
   margin-bottom: 1.5rem;
+}
+.about-flood-hint {
+  display: block;
+  grid-column: 1 / -1;
+  margin-top: 1.6rem;
+  font-family: var(--mono);
+  font-size: 10px; letter-spacing: 0.18em;
+  color: rgba(12, 12, 14, 0.5);
 }
 .about-lede em { font-style: normal; color: var(--blue); }
 .about-text > p { max-width: 60ch; margin-bottom: 2.5rem; opacity: 0.8; }

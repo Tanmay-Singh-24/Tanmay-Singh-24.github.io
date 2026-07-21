@@ -28,11 +28,14 @@
     </div>
   </div>
 
-  <!-- ██ CUSTOM CURSOR ██ -->
+  <!-- ██ PIXEL FLOOD — click detonation overlay ██ -->
+  <canvas id="flood" aria-hidden="true"></canvas>
+
+  <!-- ██ CUSTOM CURSOR — morphs per section ██ -->
   <div class="cursor" id="cursor" aria-hidden="true">
     <div class="cursor-h"></div>
     <div class="cursor-v"></div>
-    <div class="cursor-box"></div>
+    <canvas class="cursor-px" id="cursorPx" width="120" height="120"></canvas>
     <div class="cursor-label" id="cursorLabel"></div>
   </div>
 
@@ -264,6 +267,7 @@
           <canvas id="portraitCanvas"></canvas>
           <span class="about-portrait-label">SUBJECT — THE&nbsp;OBSERVER · IT&nbsp;TRACKS,&nbsp;IT&nbsp;BLINKS,&nbsp;IT&nbsp;WINKS&nbsp;ON&nbsp;CLICK</span>
         </div>
+        <span class="about-flood-hint">CLICK&nbsp;ANYWHERE&nbsp;IN&nbsp;THIS&nbsp;SECTION&nbsp;—&nbsp;IT&nbsp;FLOODS</span>
         <div class="about-text">
           <p class="about-lede">
             I build twice: once <em>close to the metal</em> — C++, SQL, memory,
@@ -324,7 +328,7 @@
         <canvas id="smiley" data-cursor=":)"></canvas>
         <div class="contact-links">
           <a href="https://github.com/Tanmay-Singh-24" target="_blank" rel="noopener" class="scramble" data-text="GITHUB&nbsp;↗">GITHUB&nbsp;↗</a>
-          <a href="https://www.linkedin.com/" target="_blank" rel="noopener" class="scramble" data-text="LINKEDIN&nbsp;↗">LINKEDIN&nbsp;↗</a>
+          <a href="https://www.linkedin.com/in/tanmay-singh-174052313" target="_blank" rel="noopener" class="scramble" data-text="LINKEDIN&nbsp;↗">LINKEDIN&nbsp;↗</a>
         </div>
       </div>
     </section>

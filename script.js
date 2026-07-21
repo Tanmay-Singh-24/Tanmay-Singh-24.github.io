@@ -1341,16 +1341,81 @@ function onScreen(el, cb) {
   if (!root || window.matchMedia("(hover: none)").matches) return;
   const h = root.querySelector(".cursor-h");
   const v = root.querySelector(".cursor-v");
-  const box = root.querySelector(".cursor-box");
+  const px = document.getElementById("cursorPx");
+  const pctx = px.getContext("2d");
   const label = document.getElementById("cursorLabel");
   const coords = document.getElementById("coords");
 
-  addEventListener("pointermove", (e) => {
-    const { clientX: x, clientY: y } = e;
+  /* pixel sprites — X is a filled cell, hx/hy is the hotspot */
+  const SPRITES = {
+    plus: { g: ["..X..", "..X..", "XXXXX", "..X..", "..X.."], hx: 2, hy: 2 },
+    arrow: {
+      g: [
+        "X.........",
+        "XX........",
+        "XXX.......",
+        "XXXX......",
+        "XXXXX.....",
+        "XXXXXX....",
+        "XXXXXXX...",
+        "XXXXXXXX..",
+        "XXXXXXXXX.",
+        "XXXXXX....",
+        "XX.XXX....",
+        "X...XXX...",
+        ".....XX...",
+        "......XX..",
+      ],
+      hx: 0, hy: 0,
+    },
+    diamond: { g: ["..X..", ".XXX.", "XXXXX", ".XXX.", "..X.."], hx: 2, hy: 2 },
+    eye: {
+      g: ["..XXX..", ".X...X.", "X..X..X", "X.XXX.X", "X..X..X", ".X...X.", "..XXX.."],
+      hx: 3, hy: 3,
+    },
+    mail: {
+      g: ["XXXXXXX", "XX...XX", "X.X.X.X", "X..X..X", "XXXXXXX"],
+      hx: 3, hy: 2,
+    },
+    dot: { g: ["XX", "XX"], hx: 1, hy: 1 },
+  };
+  const CELL = 8;              // buffer px per sprite cell (CSS = half)
+  const CSSCELL = CELL / 2;
+
+  let curName = "", curColor = "";
+
+  function paint(name, color) {
+    if (name === curName && color === curColor) return;
+    curName = name; curColor = color;
+    const s = SPRITES[name];
+    pctx.clearRect(0, 0, px.width, px.height);
+    pctx.fillStyle = color;
+    for (let r = 0; r < s.g.length; r++) {
+      for (let c = 0; c < s.g[r].length; c++) {
+        if (s.g[r][c] !== "X") continue;
+        pctx.fillRect(c * CELL, r * CELL, CELL - 1, CELL - 1);
+      }
+    }
+  }
+
+  /* the sprite is chosen by whatever section the cursor is over */
+  function spriteFor(el) {
+    const sec = el && el.closest ? el.closest("section, footer, .marquee") : null;
+    if (!sec) return ["dot", PAL.paper];
+    if (sec.id === "hero") return ["plus", PAL.blueHi];
+    if (sec.id === "warp") return ["diamond", PAL.aqua];
+    if (sec.id === "works") return ["arrow", PAL.lime];
+    if (sec.id === "about") return ["eye", PAL.blue];
+    if (sec.id === "contact") return ["mail", PAL.aqua];
+    if (sec.classList.contains("marquee")) return ["dot", PAL.lime];
+    return ["dot", PAL.paper];
+  }
+
+  let lx = -1, ly = -1;
+
+  function place(x, y, el) {
     h.style.top = y + "px";
     v.style.left = x + "px";
-    box.style.left = x + "px";
-    box.style.top = y + "px";
     label.style.left = x + "px";
     label.style.top = y + "px";
     if (coords) {
@@ -1358,15 +1423,109 @@ function onScreen(el, cb) {
         String(x).padStart(4, "0") + " X · " + String(y).padStart(4, "0") + " Y";
     }
 
-    const target = e.target.closest("[data-cursor], a, button");
+    const target = el && el.closest ? el.closest("[data-cursor], a, button") : null;
+    let [name, color] = spriteFor(el);
     if (target) {
       root.classList.add("active");
       label.textContent = target.dataset.cursor || "GO";
+      color = PAL.lime;
     } else {
       root.classList.remove("active");
       label.textContent = "";
     }
+    paint(name, color);
+
+    const s = SPRITES[name];
+    px.style.left = x - s.hx * CSSCELL + "px";
+    px.style.top = y - s.hy * CSSCELL + "px";
+  }
+
+  addEventListener("pointermove", (e) => {
+    lx = e.clientX; ly = e.clientY;
+    place(lx, ly, e.target);
   });
+
+  // scrolling changes the section under a stationary cursor — re-evaluate
+  addEventListener("scroll", () => {
+    if (lx < 0) return;
+    place(lx, ly, document.elementFromPoint(lx, ly));
+  }, { passive: true });
+})();
+
+/* ---------------------------------------------------------------
+   PIXEL FLOOD — click anywhere in ABOUT and the screen floods with
+   heat cells from the click point, holds, then dissolves away.
+   --------------------------------------------------------------- */
+(function pixelFlood() {
+  const canvas = document.getElementById("flood");
+  const about = document.getElementById("about");
+  if (!canvas || !about) return;
+  const ctx = canvas.getContext("2d");
+
+  const CELL = 14;
+  let W = 0, H = 0, cols = 0, rows = 0, seed = null;
+  let state = null;
+
+  function size() {
+    W = innerWidth; H = innerHeight;
+    canvas.width = W; canvas.height = H;
+    cols = Math.ceil(W / CELL) + 1;
+    rows = Math.ceil(H / CELL) + 1;
+    seed = new Float32Array(cols * rows);
+    for (let i = 0; i < seed.length; i++) seed[i] = Math.random();
+  }
+  size();
+  addEventListener("resize", size);
+
+  const GROW = 26, HOLD = 12, MELT = 30;
+
+  about.addEventListener("pointerdown", (e) => {
+    if (e.target.closest("a, button")) return;
+    if (reducedMotion) return;
+    // fresh dither each time so no two floods look alike
+    for (let i = 0; i < seed.length; i++) seed[i] = Math.random();
+    state = { x: e.clientX, y: e.clientY, t: 0 };
+    canvas.classList.add("on");
+  });
+
+  function frame() {
+    requestAnimationFrame(frame);
+    if (!state) return;
+    state.t++;
+    const maxR = Math.hypot(
+      Math.max(state.x, W - state.x),
+      Math.max(state.y, H - state.y)
+    );
+    const grow = (state.t / GROW) * maxR;
+    const meltAt = GROW + HOLD;
+
+    ctx.clearRect(0, 0, W, H);
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const id = r * cols + c;
+        const x = c * CELL, y = r * CELL;
+        const d = Math.hypot(x + CELL / 2 - state.x, y + CELL / 2 - state.y);
+        // dithered leading edge so the front reads organic, not circular
+        if (d - seed[id] * CELL * 3.4 > grow) continue;
+        if (state.t > meltAt && seed[id] < (state.t - meltAt) / MELT) continue;
+        const q = d / maxR;
+        let col =
+          q < 0.18 ? PAL.lime :
+          q < 0.38 ? PAL.aqua :
+          q < 0.62 ? PAL.blue : PAL.cold;
+        if (seed[id] > 0.986) col = PAL.alert;
+        ctx.fillStyle = col;
+        ctx.fillRect(x, y, CELL - 1, CELL - 1);
+      }
+    }
+
+    if (state.t > meltAt + MELT) {
+      state = null;
+      canvas.classList.remove("on");
+      ctx.clearRect(0, 0, W, H);
+    }
+  }
+  requestAnimationFrame(frame);
 })();
 
 /* ---------------------------------------------------------------
