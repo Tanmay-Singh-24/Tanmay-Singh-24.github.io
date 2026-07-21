@@ -136,7 +136,7 @@ a { color: inherit; text-decoration: none; cursor: none; }
 /* the sprite that morphs per section — position driven by rAF spring */
 .cursor-px {
   position: fixed; left: 0; top: 0;
-  width: 60px; height: 60px;
+  width: 60px; height: 60px;   /* 160px buffer → 3 CSS px per sprite cell */
   image-rendering: pixelated;
   will-change: transform;
 }

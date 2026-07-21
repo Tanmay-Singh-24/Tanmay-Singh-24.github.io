@@ -782,6 +782,8 @@ function onScreen(el, cb) {
   }
 
   let lastSY = scrollY;
+  let chomp = 0, bite = 0, crumbs = [];
+
   function frame() {
     if (!bit) return;
     ctx.clearRect(0, 0, W, H);
@@ -791,14 +793,23 @@ function onScreen(el, cb) {
       const kick = Math.max(-1.4, Math.min(1.4, (sy - lastSY) * 0.03));
       lastSY = sy;
       off += 0.32 + kick;
+      chomp += 0.17;
     }
     const colsVis = Math.ceil(W / cellM) + 1;
     const y0 = Math.floor((H - ROWS * cellM) / 2);
+
+    // Pac-Man parks at the far left; the type scrolls into his mouth
+    const pacR = cellM * 8;
+    const pacCX = pacR + cellM * 2;
+    const pacCY = y0 + (ROWS * cellM) / 2;
+    const mouth = reducedMotion ? 0.5 : 0.06 + 0.55 * Math.abs(Math.sin(chomp));
+
     for (let c = 0; c < colsVis; c++) {
       const sc = ((Math.floor(c + off) % bw) + bw) % bw;
       for (let r2 = 0; r2 < ROWS; r2++) {
         if (!bit[r2 * bw + sc]) continue;
         let x = c * cellM, y = y0 + r2 * cellM;
+        if (x + cellM / 2 < pacCX) continue;            // already swallowed
         const dx = x - mx, dy = y - my, d2 = dx * dx + dy * dy;
         if (d2 < 6400) {
           const d = Math.sqrt(d2) || 1, f = 1 - d / 80;
@@ -809,6 +820,47 @@ function onScreen(el, cb) {
         ctx.fillRect(x, y, cellM - 1, cellM - 1);
       }
     }
+
+    // crumbs kicked up on each bite
+    if (!reducedMotion) {
+      const b = Math.floor(chomp / Math.PI);
+      if (b !== bite) {
+        bite = b;
+        for (let i = 0; i < 4; i++) {
+          crumbs.push({
+            x: pacCX + pacR * 0.55, y: pacCY + (Math.random() - 0.5) * pacR,
+            vx: 0.5 + Math.random() * 1.1, vy: -0.7 - Math.random() * 1.1, a: 1,
+          });
+        }
+      }
+      crumbs = crumbs.filter((p) => p.a > 0);
+      for (const p of crumbs) {
+        p.x += p.vx; p.y += p.vy; p.vy += 0.07; p.a -= 0.05;
+        ctx.globalAlpha = Math.max(0, p.a);
+        ctx.fillStyle = PAL.lime;
+        ctx.fillRect(Math.floor(p.x / cellM) * cellM, Math.floor(p.y / cellM) * cellM, cellM - 1, cellM - 1);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // the man himself, drawn on the same cell grid
+    const c0 = Math.floor((pacCX - pacR) / cellM), c1 = Math.ceil((pacCX + pacR) / cellM);
+    const r0 = Math.floor((pacCY - pacR - y0) / cellM), r1 = Math.ceil((pacCY + pacR - y0) / cellM);
+    for (let rr = r0; rr <= r1; rr++) {
+      for (let cc = c0; cc <= c1; cc++) {
+        const gx = cc * cellM, gy = y0 + rr * cellM;
+        const ddx = gx + cellM / 2 - pacCX, ddy = gy + cellM / 2 - pacCY;
+        if (Math.hypot(ddx, ddy) > pacR) continue;
+        if (Math.abs(Math.atan2(ddy, ddx)) < mouth) continue;   // open mouth
+        ctx.fillStyle = PAL.lime;
+        ctx.fillRect(gx, gy, cellM - 1, cellM - 1);
+      }
+    }
+    // eye
+    const ex = Math.floor((pacCX - cellM) / cellM) * cellM;
+    const ey = y0 + Math.floor((pacCY - pacR * 0.45 - y0) / cellM) * cellM;
+    ctx.fillStyle = PAL.bg;
+    ctx.fillRect(ex, ey, cellM - 1, cellM - 1);
   }
 
   canvas.addEventListener("pointermove", (e) => {
@@ -1349,22 +1401,26 @@ function onScreen(el, cb) {
   /* pixel sprites — X is a filled cell, hx/hy is the hotspot */
   const SPRITES = {
     plus: { g: ["..X..", "..X..", "XXXXX", "..X..", "..X.."], hx: 2, hy: 2 },
+    /* O = ink outline, X = fill. The outline is what makes it read as a
+       cursor over the bright figure cells instead of a coloured smudge. */
     arrow: {
       g: [
-        "X.........",
-        "XX........",
-        "XXX.......",
-        "XXXX......",
-        "XXXXX.....",
-        "XXXXXX....",
-        "XXXXXXX...",
-        "XXXXXXXX..",
-        "XXXXXXXXX.",
-        "XXXXXX....",
-        "XX.XXX....",
-        "X...XXX...",
-        ".....XX...",
-        "......XX..",
+        "O...........",
+        "OXO.........",
+        "OXXO........",
+        "OXXXO.......",
+        "OXXXXO......",
+        "OXXXXXO.....",
+        "OXXXXXXO....",
+        "OXXXXXXXO...",
+        "OXXXXXXXXO..",
+        "OXXXXXXXXXO.",
+        "OXXXXXXOOOOO",
+        "OXXXOXXO....",
+        "OXXO.OXXO...",
+        "OXO..OXXO...",
+        "OO....OXXO..",
+        "......OOOO..",
       ],
       hx: 0, hy: 0,
     },
@@ -1379,13 +1435,13 @@ function onScreen(el, cb) {
     },
     dot: { g: ["XX", "XX"], hx: 1, hy: 1 },
   };
-  const CELL = 8;              // buffer px per sprite cell (CSS = half)
-  const CSSCELL = CELL / 2;
+  const CELL = 8;              // buffer px per sprite cell
+  const CSSCELL = 3;           // 160px buffer shown at 60px CSS
 
   let curName = "dot", curColor = PAL.paper, phase = 0;
 
-  /* redraw with a shimmer: a few cells drop out each beat, and the
-     leading edge jitters a pixel — the sprite never sits perfectly still */
+  /* The silhouette stays solid — only a couple of fill cells catch a
+     highlight each beat, so it feels alive without dissolving. */
   function paint(name, color) {
     const s = SPRITES[name];
     if (!s) return;
@@ -1393,13 +1449,16 @@ function onScreen(el, cb) {
     pctx.clearRect(0, 0, px.width, px.height);
     for (let r = 0; r < s.g.length; r++) {
       for (let c = 0; c < s.g[r].length; c++) {
-        if (s.g[r][c] !== "X") continue;
-        const n = Math.sin((c * 12.9898 + r * 78.233 + phase) * 43758.5453);
-        const v = n - Math.floor(n);
-        if (v > 0.93) continue;                       // blink a cell out
-        const jx = v > 0.86 ? 1 : 0;                  // nudge a cell over
-        pctx.fillStyle = v > 0.80 ? PAL.paper : color;
-        pctx.fillRect(c * CELL + jx, r * CELL, CELL - 1, CELL - 1);
+        const ch = s.g[r][c];
+        if (ch === ".") continue;
+        if (ch === "O") {
+          pctx.fillStyle = PAL.ink;
+        } else {
+          const n = Math.sin((c * 12.9898 + r * 78.233 + phase) * 43758.5453);
+          const v = n - Math.floor(n);
+          pctx.fillStyle = v > 0.93 ? PAL.paper : color;
+        }
+        pctx.fillRect(c * CELL, r * CELL, CELL - 1, CELL - 1);
       }
     }
   }
@@ -1539,8 +1598,9 @@ function onScreen(el, cb) {
   }
 
   about.addEventListener("pointerdown", (e) => {
-    // the Observer owns its own click (it winks) — don't bury it in flood
-    if (e.target.closest("a, button, .about-portrait")) return;
+    // the Observer winks and the playground is playable — neither should
+    // get buried under a full-screen flood
+    if (e.target.closest("a, button, .about-portrait, .playground")) return;
     if (reducedMotion) return;
     if (e.pointerType === "mouse") { start(e.clientX, e.clientY, false); return; }
     disarm();
