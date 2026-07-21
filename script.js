@@ -1382,18 +1382,24 @@ function onScreen(el, cb) {
   const CELL = 8;              // buffer px per sprite cell (CSS = half)
   const CSSCELL = CELL / 2;
 
-  let curName = "", curColor = "";
+  let curName = "dot", curColor = PAL.paper, phase = 0;
 
+  /* redraw with a shimmer: a few cells drop out each beat, and the
+     leading edge jitters a pixel — the sprite never sits perfectly still */
   function paint(name, color) {
-    if (name === curName && color === curColor) return;
-    curName = name; curColor = color;
     const s = SPRITES[name];
+    if (!s) return;
+    curName = name; curColor = color;
     pctx.clearRect(0, 0, px.width, px.height);
-    pctx.fillStyle = color;
     for (let r = 0; r < s.g.length; r++) {
       for (let c = 0; c < s.g[r].length; c++) {
         if (s.g[r][c] !== "X") continue;
-        pctx.fillRect(c * CELL, r * CELL, CELL - 1, CELL - 1);
+        const n = Math.sin((c * 12.9898 + r * 78.233 + phase) * 43758.5453);
+        const v = n - Math.floor(n);
+        if (v > 0.93) continue;                       // blink a cell out
+        const jx = v > 0.86 ? 1 : 0;                  // nudge a cell over
+        pctx.fillStyle = v > 0.80 ? PAL.paper : color;
+        pctx.fillRect(c * CELL + jx, r * CELL, CELL - 1, CELL - 1);
       }
     }
   }
@@ -1411,7 +1417,9 @@ function onScreen(el, cb) {
     return ["dot", PAL.paper];
   }
 
-  let lx = -1, ly = -1;
+  let lx = -1, ly = -1;          // pointer
+  let sx = -1, sy = -1;          // sprite (lags behind, springy)
+  let wantName = "dot", wantColor = PAL.paper, active = false;
 
   function place(x, y, el) {
     h.style.top = y + "px";
@@ -1424,24 +1432,22 @@ function onScreen(el, cb) {
     }
 
     const target = el && el.closest ? el.closest("[data-cursor], a, button") : null;
-    let [name, color] = spriteFor(el);
+    const [name, color] = spriteFor(el);
+    wantName = name;
+    wantColor = target ? PAL.lime : color;
+    active = !!target;
     if (target) {
       root.classList.add("active");
       label.textContent = target.dataset.cursor || "GO";
-      color = PAL.lime;
     } else {
       root.classList.remove("active");
       label.textContent = "";
     }
-    paint(name, color);
-
-    const s = SPRITES[name];
-    px.style.left = x - s.hx * CSSCELL + "px";
-    px.style.top = y - s.hy * CSSCELL + "px";
   }
 
   addEventListener("pointermove", (e) => {
     lx = e.clientX; ly = e.clientY;
+    if (sx < 0) { sx = lx; sy = ly; }
     place(lx, ly, e.target);
   });
 
@@ -1450,6 +1456,32 @@ function onScreen(el, cb) {
     if (lx < 0) return;
     place(lx, ly, document.elementFromPoint(lx, ly));
   }, { passive: true });
+
+  /* spring toward the pointer + shimmer beat */
+  let beat = 0;
+  function loop() {
+    requestAnimationFrame(loop);
+    if (lx < 0) return;
+    const k = reducedMotion ? 1 : 0.24;
+    sx += (lx - sx) * k;
+    sy += (ly - sy) * k;
+
+    if (!reducedMotion && ++beat % 5 === 0) {
+      phase += 1.7;
+      paint(wantName, wantColor);
+    } else if (wantName !== curName || wantColor !== curColor) {
+      paint(wantName, wantColor);
+    }
+
+    const s = SPRITES[wantName] || SPRITES.dot;
+    // drift a hair toward the travel direction, so it feels dragged along
+    const dx = (lx - sx) * 0.35, dy = (ly - sy) * 0.35;
+    const scale = active ? 1.3 : 1;
+    px.style.transform =
+      `translate(${sx - s.hx * CSSCELL + dx}px, ${sy - s.hy * CSSCELL + dy}px) scale(${scale})`;
+    px.style.transformOrigin = `${s.hx * CSSCELL}px ${s.hy * CSSCELL}px`;
+  }
+  requestAnimationFrame(loop);
 })();
 
 /* ---------------------------------------------------------------
@@ -1477,27 +1509,39 @@ function onScreen(el, cb) {
   size();
   addEventListener("resize", size);
 
-  const GROW = 26, HOLD = 12, MELT = 30;
+  const LAUNCH = 22, MELT = 26;
+
+  function release() { if (state) state.held = false; }
 
   about.addEventListener("pointerdown", (e) => {
     if (e.target.closest("a, button")) return;
     if (reducedMotion) return;
     // fresh dither each time so no two floods look alike
     for (let i = 0; i < seed.length; i++) seed[i] = Math.random();
-    state = { x: e.clientX, y: e.clientY, t: 0 };
+    state = { x: e.clientX, y: e.clientY, t: 0, melt: 0, held: true };
     canvas.classList.add("on");
   });
+  // let go anywhere and it drains
+  addEventListener("pointerup", release);
+  addEventListener("pointercancel", release);
+  addEventListener("blur", release);
 
   function frame() {
     requestAnimationFrame(frame);
     if (!state) return;
-    state.t++;
+
     const maxR = Math.hypot(
       Math.max(state.x, W - state.x),
       Math.max(state.y, H - state.y)
     );
-    const grow = (state.t / GROW) * maxR;
-    const meltAt = GROW + HOLD;
+
+    if (state.held) state.t++;
+    else state.melt++;
+
+    // catapult: launches hard, decelerates into full coverage, then holds
+    const p = Math.min(1, state.t / LAUNCH);
+    const grow = (1 - Math.pow(1 - p, 4)) * maxR * 1.06;
+    const boil = state.t * 0.05;
 
     ctx.clearRect(0, 0, W, H);
     for (let r = 0; r < rows; r++) {
@@ -1507,8 +1551,10 @@ function onScreen(el, cb) {
         const d = Math.hypot(x + CELL / 2 - state.x, y + CELL / 2 - state.y);
         // dithered leading edge so the front reads organic, not circular
         if (d - seed[id] * CELL * 3.4 > grow) continue;
-        if (state.t > meltAt && seed[id] < (state.t - meltAt) / MELT) continue;
-        const q = d / maxR;
+        // once released, cells drain away in their own random order
+        if (!state.held && seed[id] < state.melt / MELT) continue;
+        // held: the bands breathe so a full screen never looks frozen
+        const q = d / maxR + Math.sin(boil + seed[id] * 6.283) * 0.045;
         let col =
           q < 0.18 ? PAL.lime :
           q < 0.38 ? PAL.aqua :
@@ -1519,7 +1565,7 @@ function onScreen(el, cb) {
       }
     }
 
-    if (state.t > meltAt + MELT) {
+    if (!state.held && state.melt > MELT) {
       state = null;
       canvas.classList.remove("on");
       ctx.clearRect(0, 0, W, H);

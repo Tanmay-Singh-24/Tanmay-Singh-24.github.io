@@ -133,12 +133,12 @@ a { color: inherit; text-decoration: none; cursor: none; }
 .cursor-h, .cursor-v { position: fixed; background: rgba(241, 242, 238, 0.18); mix-blend-mode: difference; }
 .cursor-h { left: 0; right: 0; height: 1px; }
 .cursor-v { top: 0; bottom: 0; width: 1px; }
-/* the sprite that morphs per section */
+/* the sprite that morphs per section — position driven by rAF spring */
 .cursor-px {
-  position: fixed;
+  position: fixed; left: 0; top: 0;
   width: 60px; height: 60px;
   image-rendering: pixelated;
-  transition: transform 0.14s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
 }
 .cursor-label {
   position: fixed;
@@ -570,9 +570,10 @@ section { padding: 6rem 2rem; }
 .about .section-no { color: var(--blue); }
 .about .section-count { color: rgba(12, 12, 14, 0.55); }
 
+/* wide screens: portrait · prose · facts, so the row actually fills */
 .about-grid {
   display: grid;
-  grid-template-columns: minmax(240px, 380px) 1fr;
+  grid-template-columns: minmax(260px, 360px) minmax(0, 1.4fr) minmax(220px, 0.75fr);
   gap: 3.5rem;
   align-items: start;
 }
@@ -596,8 +597,7 @@ section { padding: 6rem 2rem; }
 }
 .about-flood-hint {
   display: block;
-  grid-column: 1 / -1;
-  margin-top: 1.6rem;
+  margin-top: 2.6rem;
   font-family: var(--mono);
   font-size: 10px; letter-spacing: 0.18em;
   color: rgba(12, 12, 14, 0.5);
@@ -606,8 +606,11 @@ section { padding: 6rem 2rem; }
 .about-text > p { max-width: 60ch; margin-bottom: 2.5rem; opacity: 0.8; }
 
 .about-facts {
-  display: grid; grid-template-columns: repeat(2, minmax(180px, 1fr));
-  gap: 1.2rem; max-width: 560px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1.4rem 1.2rem;
+  border-left: 1px solid rgba(12, 12, 14, 0.18);
+  padding-left: 1.6rem;
 }
 .about-facts dt {
   font-size: 10px; letter-spacing: 0.2em;
@@ -617,8 +620,17 @@ section { padding: 6rem 2rem; }
 .blink { animation: blink 1.1s steps(2) infinite; }
 @keyframes blink { 50% { opacity: 0.25; } }
 
+@media (max-width: 1200px) {
+  .about-grid { grid-template-columns: minmax(240px, 320px) 1fr; }
+  .about-facts {
+    grid-column: 1 / -1;
+    border-left: 0; padding-left: 0;
+    border-top: 1px solid rgba(12, 12, 14, 0.18);
+    padding-top: 1.6rem;
+  }
+}
 @media (max-width: 900px) {
-  .about-grid { grid-template-columns: 1fr; }
+  .about-grid { grid-template-columns: 1fr; gap: 2.5rem; }
   .about-portrait { max-width: 320px; }
 }
 
