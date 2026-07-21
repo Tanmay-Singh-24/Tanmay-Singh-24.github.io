@@ -17,6 +17,8 @@ const PAL = {
   blueHi: "#5060ff",
   aqua: "#37e0c8",
   lime: "#d4ff3f",
+  violet: "#8b5cff",
+  sky: "#7fb0ff",
   alert: "#ff5230",
 };
 
@@ -1603,7 +1605,7 @@ function onScreen(el, cb) {
      WAVE2   — a second front sweeps through, flipping the body to red
      GLITCH  — the field shatters into red static and thins to nothing  */
   const CHARGE = 150, RUMBLE = 16, WAVE2 = 90, GLITCH = 52;
-  const P = { CHARGE: 0, RUMBLE: 1, WAVE2: 2, GLITCH: 3 };
+  const P = { CHARGE: 0, RUMBLE: 1, WAVE2: 2, HOLD: 3, GLITCH: 4 };
 
   function release() { if (state) state.held = false; }
 
@@ -1672,13 +1674,17 @@ function onScreen(el, cb) {
 
     /* advance the choreography */
     if (s.ph === P.CHARGE) {
-      // letting go early skips straight to the shatter
+      // letting go before it saturates skips straight to the shatter
       if (!s.held) { s.ph = P.GLITCH; s.k = 0; }
       else if (s.k >= CHARGE) { s.ph = P.RUMBLE; s.k = 0; }
     } else if (s.ph === P.RUMBLE) {
       if (s.k >= RUMBLE) { s.ph = P.WAVE2; s.k = 0; }
     } else if (s.ph === P.WAVE2) {
-      if (s.k >= WAVE2) { s.ph = P.GLITCH; s.k = 0; }
+      // let the second wave finish sweeping even if released mid-way
+      if (s.k >= WAVE2) { s.ph = P.HOLD; s.k = 0; }
+    } else if (s.ph === P.HOLD) {
+      // sits fully taken over until the button comes up
+      if (!s.held) { s.ph = P.GLITCH; s.k = 0; }
     } else if (s.ph === P.GLITCH && s.k >= GLITCH) {
       state = null;
       canvas.classList.remove("on");
@@ -1691,8 +1697,10 @@ function onScreen(el, cb) {
     const grow = s.ph === P.CHARGE
       ? ease(s.k / CHARGE) * maxR * 1.05
       : maxR * 1.05;
-    // second front sweeps once the field has saturated
-    const grow2 = s.ph === P.WAVE2 ? ease(s.k / WAVE2) * maxR * 1.05 : -1;
+    // second front sweeps once the field has saturated, then stays put
+    const grow2 =
+      s.ph === P.WAVE2 ? ease(s.k / WAVE2) * maxR * 1.05 :
+      (s.ph === P.HOLD || s.ph === P.GLITCH) ? maxR * 1.05 : -1;
     const boil = s.t * 0.05;
 
     // the shudder at saturation, and a lighter tremor under the 2nd wave
@@ -1718,10 +1726,12 @@ function onScreen(el, cb) {
 
         let col;
         if (s.ph === P.GLITCH) {
-          /* shatter: the field becomes red static that thins to nothing */
+          /* shatter: the field breaks into static that thins to nothing,
+             carrying the same violet/blue it had when it broke */
           if (Math.random() < gk * 1.15) continue;
           const v = Math.random();
-          col = v > 0.93 ? PAL.cold : v > 0.87 ? PAL.blue : v > 0.82 ? PAL.lime : PAL.alert;
+          col = v > 0.94 ? PAL.cold : v > 0.86 ? PAL.aqua
+              : v > 0.46 ? PAL.violet : PAL.sky;
         } else {
           /* Colour rides the FRONT, not the radius: a navy vanguard leads,
              then blue, aqua and a thin red, with a solid body behind. */
@@ -1732,12 +1742,19 @@ function onScreen(el, cb) {
           else if (edge < CELL * 13.5) col = PAL.alert;
           else col = seed[id] > 0.99 ? PAL.aqua : PAL.lime;
 
-          // second wave repaints the body red behind its own lime-edged front
+          /* Second wave repaints the body behind an aqua-edged front —
+             a dithered violet→light-blue ramp, purple at the core cooling
+             out toward the rim, so it stays in the site's register. */
           if (grow2 >= 0 && d - seed[id] * CELL * 3.4 < grow2) {
             const e2 = grow2 - d;
             if (e2 < CELL * 3) col = PAL.cold;
-            else if (e2 < CELL * 5.5) col = PAL.lime;
-            else col = seed[id] > 0.99 ? PAL.lime : PAL.alert;
+            else if (e2 < CELL * 5.5) col = PAL.aqua;
+            else {
+              const q = d / maxR + (seed[id] - 0.5) * 0.26
+                + Math.sin(boil * 0.6 + seed[id] * 6.283) * 0.035;
+              col = q < 0.52 ? PAL.violet : PAL.sky;
+              if (seed[id] > 0.988) col = PAL.aqua;
+            }
           }
         }
         ctx.fillStyle = col;
