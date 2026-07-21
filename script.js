@@ -17,7 +17,8 @@ const PAL = {
   blueHi: "#5060ff",
   aqua: "#37e0c8",
   lime: "#d4ff3f",
-  violet: "#8b5cff",
+  violet: "#a855f7",
+  indigo: "#7c6cff",
   sky: "#7fb0ff",
   alert: "#ff5230",
 };
@@ -1703,14 +1704,17 @@ function onScreen(el, cb) {
       (s.ph === P.HOLD || s.ph === P.GLITCH) ? maxR * 1.05 : -1;
     const boil = s.t * 0.05;
 
-    // the shudder at saturation, and a lighter tremor under the 2nd wave
+    /* It shudders from saturation onward and keeps rattling for as long
+       as the button is down — the shaking only stops when you let go. */
     let shx = 0, shy = 0;
-    if (s.ph === P.RUMBLE) {
-      shx = (Math.random() - 0.5) * CELL * 2.2;
-      shy = (Math.random() - 0.5) * CELL * 2.2;
-    } else if (s.ph === P.WAVE2) {
-      shx = (Math.random() - 0.5) * CELL * 0.7;
-      shy = (Math.random() - 0.5) * CELL * 0.7;
+    const amp =
+      s.ph === P.RUMBLE ? CELL * 2.2 :
+      s.ph === P.WAVE2 ? CELL * 0.9 :
+      s.ph === P.HOLD ? CELL * 0.95 : 0;
+    if (amp) {
+      // a driven vibration with noise on top, rather than pure jitter
+      shx = (Math.sin(s.t * 1.9) * 0.55 + (Math.random() - 0.5)) * amp;
+      shy = (Math.cos(s.t * 2.3) * 0.55 + (Math.random() - 0.5)) * amp;
     }
 
     const gk = s.ph === P.GLITCH ? s.k / GLITCH : 0;
@@ -1730,8 +1734,8 @@ function onScreen(el, cb) {
              carrying the same violet/blue it had when it broke */
           if (Math.random() < gk * 1.15) continue;
           const v = Math.random();
-          col = v > 0.94 ? PAL.cold : v > 0.86 ? PAL.aqua
-              : v > 0.46 ? PAL.violet : PAL.sky;
+          col = v > 0.95 ? PAL.cold : v > 0.88 ? PAL.aqua
+              : v > 0.6 ? PAL.violet : v > 0.3 ? PAL.indigo : PAL.sky;
         } else {
           /* Colour rides the FRONT, not the radius: a navy vanguard leads,
              then blue, aqua and a thin red, with a solid body behind. */
@@ -1750,10 +1754,13 @@ function onScreen(el, cb) {
             if (e2 < CELL * 3) col = PAL.cold;
             else if (e2 < CELL * 5.5) col = PAL.aqua;
             else {
-              const q = d / maxR + (seed[id] - 0.5) * 0.26
-                + Math.sin(boil * 0.6 + seed[id] * 6.283) * 0.035;
-              col = q < 0.52 ? PAL.violet : PAL.sky;
-              if (seed[id] > 0.988) col = PAL.aqua;
+              /* three concentric bands so it reads as an even orb —
+                 purple core, indigo shoulder, light-blue rim. The dither
+                 is kept small so the rings stay legible as rings. */
+              const q = d / maxR + (seed[id] - 0.5) * 0.1
+                + Math.sin(boil * 0.5 + seed[id] * 6.283) * 0.02;
+              col = q < 0.3 ? PAL.violet : q < 0.58 ? PAL.indigo : PAL.sky;
+              if (seed[id] > 0.991) col = PAL.aqua;
             }
           }
         }
