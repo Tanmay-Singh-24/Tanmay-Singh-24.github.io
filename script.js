@@ -23,6 +23,42 @@ const PAL = {
   alert: "#ff5230",
 };
 
+/* ---------------------------------------------------------------
+   HAPTICS
+   Android/Chrome expose the Vibration API. iOS Safari does not — it
+   has never shipped navigator.vibrate — so there we fall back to the
+   iOS 17.4+ trick of clicking an offscreen <input type="checkbox" switch>,
+   which the system answers with a light tap. Anything older is silent.
+   --------------------------------------------------------------- */
+const haptic = (() => {
+  const canVibrate = typeof navigator.vibrate === "function";
+  const isTouch = window.matchMedia("(hover: none)").matches;
+  let sw = null;
+
+  function tap() {
+    if (!sw) {
+      sw = document.createElement("input");
+      sw.type = "checkbox";
+      sw.setAttribute("switch", "");     // iOS 17.4+ only; inert elsewhere
+      sw.setAttribute("aria-hidden", "true");
+      sw.tabIndex = -1;
+      sw.style.cssText =
+        "position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none";
+      document.body.appendChild(sw);
+    }
+    try { sw.click(); } catch (e) { /* unsupported — stay silent */ }
+  }
+
+  return function haptic(pattern, taps) {
+    if (reducedMotion) return;
+    if (canVibrate) { try { navigator.vibrate(pattern); } catch (e) {} return; }
+    if (!isTouch) return;
+    // no pattern support on iOS: approximate it with spaced taps
+    const n = taps || 1;
+    for (let i = 0; i < n; i++) setTimeout(tap, i * 85);
+  };
+})();
+
 /* runs a module's frame only while its canvas is on screen */
 function onScreen(el, cb) {
   let act = false;
@@ -1615,6 +1651,7 @@ function onScreen(el, cb) {
     for (let i = 0; i < seed.length; i++) seed[i] = Math.random();
     state = { x, y, t: 0, ph: P.CHARGE, k: 0, held: true, touch };
     canvas.classList.add("on");
+    haptic(10, 1);                       // the orb catches
   }
 
   /* Touch fires pointerdown the instant a finger lands, so a plain
@@ -1676,16 +1713,16 @@ function onScreen(el, cb) {
     /* advance the choreography */
     if (s.ph === P.CHARGE) {
       // letting go before it saturates skips straight to the shatter
-      if (!s.held) { s.ph = P.GLITCH; s.k = 0; }
-      else if (s.k >= CHARGE) { s.ph = P.RUMBLE; s.k = 0; }
+      if (!s.held) { s.ph = P.GLITCH; s.k = 0; haptic([12, 18, 12, 18, 34], 4); }
+      else if (s.k >= CHARGE) { s.ph = P.RUMBLE; s.k = 0; haptic([26, 30, 26, 30, 46], 3); }
     } else if (s.ph === P.RUMBLE) {
-      if (s.k >= RUMBLE) { s.ph = P.WAVE2; s.k = 0; }
+      if (s.k >= RUMBLE) { s.ph = P.WAVE2; s.k = 0; haptic(20, 1); }
     } else if (s.ph === P.WAVE2) {
       // let the second wave finish sweeping even if released mid-way
-      if (s.k >= WAVE2) { s.ph = P.HOLD; s.k = 0; }
+      if (s.k >= WAVE2) { s.ph = P.HOLD; s.k = 0; haptic(14, 1); }
     } else if (s.ph === P.HOLD) {
       // sits fully taken over until the button comes up
-      if (!s.held) { s.ph = P.GLITCH; s.k = 0; }
+      if (!s.held) { s.ph = P.GLITCH; s.k = 0; haptic([12, 18, 12, 18, 34], 4); }
     } else if (s.ph === P.GLITCH && s.k >= GLITCH) {
       state = null;
       canvas.classList.remove("on");
