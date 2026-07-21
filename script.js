@@ -798,9 +798,10 @@ function onScreen(el, cb) {
     const colsVis = Math.ceil(W / cellM) + 1;
     const y0 = Math.floor((H - ROWS * cellM) / 2);
 
-    // Pac-Man parks at the far left; the type scrolls into his mouth
-    const pacR = cellM * 8;
-    const pacCX = pacR + cellM * 2;
+    // Pac-Man parks at the far left; the type scrolls into his mouth.
+    // He has to out-size the glyphs or it reads as text eating him.
+    const pacR = cellM * 12;
+    const pacCX = pacR + cellM * 1.5;
     const pacCY = y0 + (ROWS * cellM) / 2;
     const mouth = reducedMotion ? 0.5 : 0.06 + 0.55 * Math.abs(Math.sin(chomp));
 
@@ -1651,13 +1652,18 @@ function onScreen(el, cb) {
         if (d - seed[id] * CELL * 3.4 > grow) continue;
         // once released, cells drain away in their own random order
         if (!state.held && seed[id] < state.melt / MELT) continue;
-        // held: the bands breathe so a full screen never looks frozen
-        const q = d / maxR + Math.sin(boil + seed[id] * 6.283) * 0.045;
-        let col =
-          q < 0.18 ? PAL.lime :
-          q < 0.38 ? PAL.aqua :
-          q < 0.62 ? PAL.blue : PAL.cold;
-        if (seed[id] > 0.986) col = PAL.alert;
+
+        /* Colour rides the FRONT, not the radius: a navy vanguard leads,
+           then blue, aqua and a thin red, with a solid hot body filling in
+           behind. That's what makes it read as a wave passing through
+           rather than a gradient blob. */
+        const edge = grow - d + Math.sin(boil + seed[id] * 6.283) * CELL * 0.9;
+        let col;
+        if (edge < CELL * 3.5) col = PAL.cold;
+        else if (edge < CELL * 7) col = PAL.blue;
+        else if (edge < CELL * 10.5) col = PAL.aqua;
+        else if (edge < CELL * 13.5) col = PAL.alert;
+        else col = seed[id] > 0.99 ? PAL.aqua : PAL.lime;   // solid body, rare fleck
         ctx.fillStyle = col;
         ctx.fillRect(x, y, CELL - 1, CELL - 1);
       }
