@@ -798,12 +798,15 @@ function onScreen(el, cb) {
     const colsVis = Math.ceil(W / cellM) + 1;
     const y0 = Math.floor((H - ROWS * cellM) / 2);
 
-    // Pac-Man parks at the far left; the type scrolls into his mouth.
-    // He has to out-size the glyphs or it reads as text eating him.
-    const pacR = cellM * 12;
+    /* Pac-Man parks at the far left and the type scrolls into his mouth.
+       He's sized so the open jaw is about as tall as the capitals —
+       R*2*sin(maxMouth) ≈ cap height — otherwise the letters look too
+       big to swallow. */
+    const pacR = cellM * 13;
     const pacCX = pacR + cellM * 1.5;
     const pacCY = y0 + (ROWS * cellM) / 2;
-    const mouth = reducedMotion ? 0.5 : 0.06 + 0.55 * Math.abs(Math.sin(chomp));
+    const mouth = reducedMotion ? 0.5 : 0.06 + 0.88 * Math.abs(Math.sin(chomp));
+    const CHEW = pacR * 1.3;                            // shredding zone
 
     for (let c = 0; c < colsVis; c++) {
       const sc = ((Math.floor(c + off) % bw) + bw) % bw;
@@ -811,57 +814,82 @@ function onScreen(el, cb) {
         if (!bit[r2 * bw + sc]) continue;
         let x = c * cellM, y = y0 + r2 * cellM;
         if (x + cellM / 2 < pacCX) continue;            // already swallowed
+        let col = hcol(sc, r2);
+
+        // being chewed: the closer to the jaw, the more it shakes apart
+        if (!reducedMotion) {
+          const cdx = x - pacCX, cdy = y - pacCY;
+          const cd = Math.hypot(cdx, cdy);
+          if (cd < CHEW) {
+            const bitten = 1 - cd / CHEW;
+            if (Math.random() < bitten * 0.4) continue;  // torn off
+            x += (Math.random() - 0.5) * bitten * cellM * 3;
+            y += (Math.random() - 0.5) * bitten * cellM * 3;
+            if (Math.random() < bitten * 0.7) col = Math.random() < 0.55 ? PAL.lime : PAL.alert;
+          }
+        }
+
         const dx = x - mx, dy = y - my, d2 = dx * dx + dy * dy;
         if (d2 < 6400) {
           const d = Math.sqrt(d2) || 1, f = 1 - d / 80;
           if (f > 0.72) continue;                       // knock cells out at the center
           x += (dx / d) * f * 20; y += (dy / d) * f * 20;
         }
-        ctx.fillStyle = hcol(sc, r2);
+        ctx.fillStyle = col;
         ctx.fillRect(x, y, cellM - 1, cellM - 1);
       }
     }
 
-    // crumbs kicked up on each bite
+    // debris sprayed out of the jaw as it works
     if (!reducedMotion) {
       const b = Math.floor(chomp / Math.PI);
-      if (b !== bite) {
-        bite = b;
-        for (let i = 0; i < 4; i++) {
-          crumbs.push({
-            x: pacCX + pacR * 0.55, y: pacCY + (Math.random() - 0.5) * pacR,
-            vx: 0.5 + Math.random() * 1.1, vy: -0.7 - Math.random() * 1.1, a: 1,
-          });
-        }
+      const closing = b !== bite;
+      if (closing) bite = b;
+      const n = closing ? 7 : 2;                        // extra burst on each snap
+      for (let i = 0; i < n; i++) {
+        const a = (Math.random() - 0.5) * mouth * 2;
+        crumbs.push({
+          x: pacCX + Math.cos(a) * pacR * 0.85,
+          y: pacCY + Math.sin(a) * pacR * 0.85,
+          vx: 0.4 + Math.random() * 1.6,
+          vy: (Math.random() - 0.5) * 2.6,
+          a: 1,
+          c: Math.random() < 0.5 ? PAL.lime : PAL.alert,
+        });
       }
       crumbs = crumbs.filter((p) => p.a > 0);
       for (const p of crumbs) {
-        p.x += p.vx; p.y += p.vy; p.vy += 0.07; p.a -= 0.05;
+        p.x += p.vx; p.y += p.vy; p.vy += 0.06; p.a -= 0.055;
         ctx.globalAlpha = Math.max(0, p.a);
-        ctx.fillStyle = PAL.lime;
+        ctx.fillStyle = p.c;
         ctx.fillRect(Math.floor(p.x / cellM) * cellM, Math.floor(p.y / cellM) * cellM, cellM - 1, cellM - 1);
       }
       ctx.globalAlpha = 1;
     }
 
-    // the man himself, drawn on the same cell grid
+    // the man himself, drawn on the same cell grid — and the cursor
+    // shoves his pixels around exactly like it does the type
     const c0 = Math.floor((pacCX - pacR) / cellM), c1 = Math.ceil((pacCX + pacR) / cellM);
     const r0 = Math.floor((pacCY - pacR - y0) / cellM), r1 = Math.ceil((pacCY + pacR - y0) / cellM);
     for (let rr = r0; rr <= r1; rr++) {
       for (let cc = c0; cc <= c1; cc++) {
-        const gx = cc * cellM, gy = y0 + rr * cellM;
+        let gx = cc * cellM, gy = y0 + rr * cellM;
         const ddx = gx + cellM / 2 - pacCX, ddy = gy + cellM / 2 - pacCY;
         if (Math.hypot(ddx, ddy) > pacR) continue;
-        if (Math.abs(Math.atan2(ddy, ddx)) < mouth) continue;   // open mouth
-        ctx.fillStyle = PAL.lime;
+        const isEye =
+          Math.abs(ddx + cellM) < cellM * 1.2 &&
+          Math.abs(ddy + pacR * 0.45) < cellM * 1.2;
+        if (!isEye && Math.abs(Math.atan2(ddy, ddx)) < mouth) continue;  // open jaw
+        const dx = gx - mx, dy = gy - my, d2 = dx * dx + dy * dy;
+        if (d2 < 6400) {
+          const d = Math.sqrt(d2) || 1, f = 1 - d / 80;
+          if (f > 0.72) continue;                       // cursor punches through him
+          gx += (dx / d) * f * 20; gy += (dy / d) * f * 20;
+        }
+        ctx.fillStyle = isEye ? PAL.bg : PAL.lime;
         ctx.fillRect(gx, gy, cellM - 1, cellM - 1);
       }
     }
-    // eye
-    const ex = Math.floor((pacCX - cellM) / cellM) * cellM;
-    const ey = y0 + Math.floor((pacCY - pacR * 0.45 - y0) / cellM) * cellM;
-    ctx.fillStyle = PAL.bg;
-    ctx.fillRect(ex, ey, cellM - 1, cellM - 1);
   }
 
   canvas.addEventListener("pointermove", (e) => {
